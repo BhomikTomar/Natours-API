@@ -1,5 +1,7 @@
 const Tour = require('../models/tourModel');
 const APIFeatures = require('../utils/apiFeatures');
+const AppError = require('../utils/appError');
+const catchAsync = require('../utils/catchAsync');
 
 exports.aliasTopTours = (req, res, next) => {
     req.query.limit = '5';
@@ -8,8 +10,7 @@ exports.aliasTopTours = (req, res, next) => {
     next();
 }
 
-exports.getAllTours = async (req, res) => {
-    try{
+exports.getAllTours = catchAsync(async (req, res, next) => {
         const features = new APIFeatures(Tour.find(), req.query)
             .filter()
             .sort()
@@ -26,17 +27,14 @@ exports.getAllTours = async (req, res) => {
                 tours
             }
         });
-    } catch(err){
-        res.status(400).json({
-            status: 'fail',
-            message: err
-        });
-    }
-};
+});
 
-exports.getTour = async (req, res) => {
-    try{
+exports.getTour = catchAsync(async (req, res, next) => {
        const tour = await Tour.findById(req.params.id);
+
+       if(!tour){
+        return next(new AppError('No tour found with that ID', 404));
+       }
 
        res.status(200).json({
            status: 'success',
@@ -44,21 +42,10 @@ exports.getTour = async (req, res) => {
                tour
            }
        });
-    } catch(err){
-        res.status(400).json({
-            status: 'fail',
-            message: err
-        });
-    }
-    
-};
+});
 
-exports.createTour = async (req, res) => {
-    try{
-        // const newTour = new Tour({});
-        // newTour.save();
-
-        const newTour = await Tour.create(req.body);
+exports.createTour = catchAsync(async (req, res, next) => {
+    const newTour = await Tour.create(req.body);
         
         res.status(201).json({
             status: 'success',
@@ -66,20 +53,17 @@ exports.createTour = async (req, res) => {
                 tour: newTour
             }
         });
-    } catch(err){
-        res.status(400).json({
-            status: 'fail',
-            message: err
-        });
-    }
-};
+});
     
-exports.updateTour = async (req, res) =>{ 
-    try {
+exports.updateTour = catchAsync(async (req, res, next) =>{ 
         const tour = await Tour.findByIdAndUpdate(req.params.id, req.body, {
             new: true,
             runValidators: true
         });
+
+        if(!tour){
+            return next(new AppError('No tour found with that ID', 404));
+        }
 
         res.status(200).json({
             status: 'success',
@@ -87,32 +71,22 @@ exports.updateTour = async (req, res) =>{
                 tour
             }
         });
-    } catch(err){
-        res.status(400).json({
-            status: 'fail',
-            message: 'Invalid data sent'
-        });
-    }
-};
+});
 
-exports.deleteTour = async (req, res) =>{  
-    try{
-        await Tour.findByIdAndDelete(req.params.id);
+exports.deleteTour = catchAsync(async (req, res, next) =>{  
+        const tour = await Tour.findByIdAndDelete(req.params.id);
+
+        if(!tour){
+            return next(new AppError('No tour found with that ID', 404));
+        }
 
         res.status(204).json({
             status: 'success',
             data: null
         })
-    } catch(err){
-        res.status(400).json({
-            status: 'fail',
-            message: 'Invalid data sent'
-        });
-    }
-};
+});
 
-exports.getTourStats = async (req, res) => {
-    try {
+exports.getTourStats = catchAsync(async (req, res, next) => {
         const stats = await Tour.aggregate([
           {
             $match: {ratingsAverage: { $gte: 4.5 } }
@@ -139,16 +113,9 @@ exports.getTourStats = async (req, res) => {
                 stats
             }
         });
-    } catch(err){
-        res.status(400).json({
-            status: 'fail',
-            message: 'Invalid data sent'
-        });
-    }
-};
+});
 
-exports.getMonthlyPlan = async (req, res) => {
-    try{
+exports.getMonthlyPlan = catchAsync(async (req, res, next) => {
         const year = req.params.year * 1;
         const plan = await Tour.aggregate([
             {
@@ -186,10 +153,4 @@ exports.getMonthlyPlan = async (req, res) => {
                 plan
             }
         });
-    } catch(err){
-        res.status(400).json({
-            status: 'fail',
-            message: 'Invalid data sent'
-        });
-    }
-};
+});
