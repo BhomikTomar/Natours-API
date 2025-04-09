@@ -9,12 +9,27 @@ mongoose.connect(DB, {
     useNewUrlParser: true,
     useCreateIndex: true,
     useFindAndModify: false
-}).then(() => console.log('DB connection successful!'));
+})
+.then(() => console.log('DB connection successful!'));
 
 const port = process.env.PORT || 3000;
 
-app.listen(port, () =>{
+const server = app.listen(port, () =>{
     console.log(`App running on port ${port}...`);
 });
 
-//text
+process.on('unhandledRejection', err => {
+    console.log('UNHANDLER REJECTION...');
+    console.log(err.name, err.message);
+    server.close()(() => {
+        process.exit(1);
+    });
+});
+
+process.on('uncaughtException', err => {
+    console.log('UNCAUGHT EXCEPTION...');
+    console.log(err.name, err.message);
+    server.close()(() => {
+        process.exit(1);
+    });
+});
