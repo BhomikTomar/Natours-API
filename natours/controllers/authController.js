@@ -14,14 +14,24 @@ const signToken = id => {
 
 const createSendToken = (user, statusCode, res) => {
   const token = signToken(user._id);
+  const cookieOptions = {
+    expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000),
+    httpOnly: true
+  };
 
-    res.status(statusCode).json({
-        status: 'success',
-        token,
-        data: {
-            user
-        }
-    });
+  if(process.env.NODE_ENV === 'production') cookieOptions.secure = true;
+
+  res.cookie('jwt', token, cookieOptions);
+
+  user.password = undefined;
+
+  res.status(statusCode).json({
+      status: 'success',
+      token,
+      data: {
+        user
+      }
+  });
 }
 
 exports.signup = catchAsync(async (req, res, next) => {
@@ -167,8 +177,6 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   await user.save();
 
   //update changedPasswordAt property for the user
-
-
   //log the user in
   createSendToken(user, 200, res);
 });
