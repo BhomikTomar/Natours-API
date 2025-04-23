@@ -1,5 +1,6 @@
 const Tour = require('../models/tourModel');
 const User = require('../models/userModel');
+const Booking = require('../models/bookingModel');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 
@@ -23,12 +24,14 @@ exports.getTour = catchAsync(async(req, res, next) => {
     }
 
     res
+        // .set(
+        //     'Content-Security-Policy',
+        //     'connect-src https://*.tiles.mapbox.com https://api.mapbox.com https://events.mapbox.com'
+        // )
         .set(
             'Content-Security-Policy',
-            'connect-src https://*.tiles.mapbox.com https://api.mapbox.com https://events.mapbox.com'
-        )
-        // .set('Content-Security-Policy', 
-        //     "default-src 'self' https://*.mapbox.com ;base-uri 'self';block-all-mixed-content;font-src 'self' https: data:;frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src https://cdnjs.cloudflare.com https://api.mapbox.com 'self' blob: ;script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests;")
+            "connect-src 'self' http://127.0.0.1:3000 https://*.tiles.mapbox.com https://api.mapbox.com https://events.mapbox.com"
+        )        
         .status(200)
         .render('tour', {
         title: `${tour.name} Tour`,
@@ -47,6 +50,18 @@ exports.getAccount = (req, res) => {
         title: 'Your account'
     });
 };
+
+exports.getMyTours = catchAsync(async (req, res, next) => {
+    const bookings = await Booking.find({user: req.user.id});
+
+    const tourIDs = bookings.map(el => el.tour);
+    const tours = await Tour.find({_id: {$in: tourIDs}});
+
+    res.status(200).render('overview', {
+        title: 'My Tours',
+        tours
+    });
+});
 
 exports.updateUserData = catchAsync(async (req, res) => {
     const updatedUser = await User.findByIdAndUpdate(req.user.id, {
